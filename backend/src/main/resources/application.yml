@@ -12,7 +12,11 @@ spring:
     redis:
       host: localhost
       port: 6379
-
+  sendgrid:
+    api-key: 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
+    from-email: devblog2025@gmail.com
+    template-id: d-b68245d3c6e84450b9f5087a2c306bad
+    verification-link: http://localhost:8082/users/confirm-email
   security:
     oauth2:
       client:
@@ -20,14 +24,14 @@ spring:
           google:
             client-id: 1005045408520-2s03lq13d8ipb40qgufnc1hne50jfju4.apps.googleusercontent.com
             client-secret: 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
-            redirect-uri: http://localhost:8081/login/oauth2/code/google
+            redirect-uri: http://localhost:8082/login/oauth2/code/google
             scope:
               - email
               - profile
           github:
-            client-id: Ov23liBdOvELrcBbwzll
-            client-secret: d9fb8d68ed3fb148f8808c57c6b3a5fabf2cf932
-            redirect-uri: http://localhost:8081/login/oauth2/code/github
+            client-id: Ov23lisHJ656HvrwO7uU
+            client-secret: 393ec983bd0fff47761ee453ac0a764ef1d06dba
+            redirect-uri: http://localhost:8082/login/oauth2/code/github
             scope:
               - read:user
               - user:email

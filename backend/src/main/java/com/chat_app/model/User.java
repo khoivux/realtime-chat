@@ -20,10 +20,10 @@ public class User {
     @Id
     @EqualsAndHashCode.Include
     private String id;
-    private String firstname;
-    private String lastname;
     @EqualsAndHashCode.Include
     private String username;
+    private String firstname;
+    private String lastname;
     private String password;
     private String displayName;
     private String email;

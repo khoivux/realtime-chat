@@ -34,6 +34,7 @@ public class SecurityConfig {
     private String SIGNER_KEY;
 
     private final String[] PUBLIC_ENDPOINTS = {
+            "/users/confirm-email/**",
             "/api/v1/auth/**",
             "/ws/**"
     };
