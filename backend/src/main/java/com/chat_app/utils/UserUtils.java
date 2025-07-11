@@ -19,9 +19,12 @@ public class UserUtils {
         UserUtils.userRepository = userRepository;
     }
 
+    public static String getCurrUserId() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
     public static User getCurrUser() {
-        var context = SecurityContextHolder.getContext();
-        return userRepository.findById(context.getAuthentication().getName())
+        return userRepository.findById(getCurrUserId())
                 .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
