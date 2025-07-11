@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface ConversationRepository extends MongoRepository<Conversation, String> {
-    Optional<Conversation> findByParticipantsHash(String hash);
+    Optional<Conversation> findByParticipantHash(String hash);
 
     @Query("{'participants.userId' : ?0, 'isDeleted': false}")
     List<Conversation> findAllActiveConversationsByUserId(String userId);

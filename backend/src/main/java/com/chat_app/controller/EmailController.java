@@ -19,11 +19,11 @@ public class EmailController {
 
     @GetMapping("/send-email")
     public void send(@RequestParam  String to, String subject, String content) {
-        emailService.send(to, subject, content);
+        emailService.sendSimpleEmail(to, subject, content);
     }
 
     @GetMapping("/verify-email")
     public void sendVerificationEmail(@RequestParam  String to, String name) {
-        emailService.sendVerificationEmail(to, name);
+        emailService.sendVerifyEmail(to, name);
     }
 }

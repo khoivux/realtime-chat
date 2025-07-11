@@ -48,7 +48,7 @@ public class ConversationServiceImpl implements ConversationService{
 
         String userIdHash = generateParticipantHash(sortedIds);
         // Xử lý chat 1-1 đã tồn tại
-        Conversation conversation = conversationRepository.findByParticipantsHash(userIdHash)
+        Conversation conversation = conversationRepository.findByParticipantHash(userIdHash)
                 .orElseGet(() -> {
                     // Danh sách thành viên
                     List<ParticipantInfo> participants = createParticipants(sortedIds, creatorId);
