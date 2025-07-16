@@ -1,5 +1,6 @@
 package com.chat_app.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ParticipantInfo {
     private String userId;
