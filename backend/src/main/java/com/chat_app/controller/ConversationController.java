@@ -1,6 +1,7 @@
 package com.chat_app.controller;
 
 import com.chat_app.dto.request.ConversationRequest;
+import com.chat_app.dto.request.ParticipantRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.ConversationResponse;
 import com.chat_app.service.ConversationService;
@@ -10,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
+@Slf4j(topic = "CONVERSATION-CONTROLLER")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/conversation")
@@ -30,6 +31,23 @@ public class ConversationController {
     public ApiResponse<?> getMyConversations() {
         return ApiResponse.builder()
                 .data(conversationService.myConversations())
+                .message("Lấy danh sách phiên chat thành công")
+                .build();
+    }
+
+    @GetMapping("/{conversationId}")
+    public ApiResponse<?> getMyConversations(@PathVariable String conversationId) {
+        return ApiResponse.builder()
+                .data(conversationService.getConversation(conversationId))
+                .message("Lấy danh sách phiên chat thành công")
+                .build();
+    }
+
+    @PatchMapping("/")
+    public ApiResponse<?> addOrDeleteUser(@RequestBody ParticipantRequest request) {
+        log.info("Request isJoin: {}", request.isJoin());
+        conversationService.addOrDeleteUser(request);
+        return ApiResponse.builder()
                 .message("Lấy danh sách phiên chat thành công")
                 .build();
     }

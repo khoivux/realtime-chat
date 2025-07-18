@@ -9,6 +9,8 @@ import com.chat_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -21,5 +23,13 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findByUsername(username).orElseThrow(
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED));
         return userMapper.toResponse(user);
+    }
+
+    @Override
+    public List<UserResponse> getList(String name) {
+        List<User> users = userRepository.findByUsernameOrDisplayName(name);
+        return users.stream()
+                .map(userMapper::toResponse)
+                .toList();
     }
 }

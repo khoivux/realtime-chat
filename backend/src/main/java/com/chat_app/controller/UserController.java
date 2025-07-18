@@ -1,6 +1,5 @@
 package com.chat_app.controller;
 
-import com.chat_app.dto.request.RegisterRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.UserResponse;
 import com.chat_app.service.UserService;
@@ -24,6 +23,15 @@ public class UserController {
         return ApiResponse.<UserResponse>builder()
                 .data(userService.getByUsername(username))
                 .message("Lấy thành công thông tin user @" + username)
+                .build();
+    }
+
+    @Operation(summary = "Get List")
+    @GetMapping("/")
+    public ApiResponse<?> getList(@RequestParam String name) {
+        return ApiResponse.builder()
+                .data(userService.getList(name))
+                .message("Lấy thành công danh sách user")
                 .build();
     }
 }

@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
+@Slf4j(topic = "CHAT_CONTROLLER")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/chat")
@@ -30,6 +30,14 @@ public class ChatMessageController {
         return ApiResponse.builder()
                 .data(chatMessageService.getMessagesByConversation(conversationId))
                 .message("Lấy danh sách tin nhắn thành công")
+                .build();
+    }
+
+    @PatchMapping("/")
+    public ApiResponse<?> updateChatMessage(@Valid @RequestBody ChatMessageRequest request) {
+        return ApiResponse.builder()
+                .data(chatMessageService.update(request))
+                .message("Cap nhat tin nhan thanh cong")
                 .build();
     }
 

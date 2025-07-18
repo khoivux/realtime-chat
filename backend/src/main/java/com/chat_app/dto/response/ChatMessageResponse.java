@@ -19,6 +19,7 @@ public class ChatMessageResponse {
     ParticipantInfo sender;
     Instant createdAt;
     Instant updatedAt;
+    ChatMessageResponse parent;
     boolean isDeleted;
     boolean isMine;
 }

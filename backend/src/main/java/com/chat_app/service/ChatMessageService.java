@@ -10,5 +10,7 @@ public interface ChatMessageService {
 
     ChatMessageResponse create(ChatMessageRequest request);
 
+    ChatMessageResponse update(ChatMessageRequest request);
+
     void delete(String chatId);
 }

@@ -25,6 +25,7 @@ public class ChatMessage {
     private String conversationId;
     private String message;
     private ParticipantInfo sender;
+    private String parentId;
     @CreatedDate
     Instant createdAt;
     @LastModifiedDate

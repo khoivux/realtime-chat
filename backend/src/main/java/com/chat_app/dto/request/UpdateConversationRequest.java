@@ -10,9 +10,8 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessageRequest {
-    String id;
+public class UpdateConversationRequest {
     String conversationId;
-    String message;
-    String parentId;
+    String avatarUrl;
+    String name;
 }

@@ -23,11 +23,12 @@ public class Conversation {
     @EqualsAndHashCode.Include
     private String id;
     private String type;
+    private String name;
 
     @Indexed(unique = true)
     String participantHash;
     List<ParticipantInfo> participants;
-
+    private String createdBy;
     @Builder.Default
     private Boolean isDeleted = false;
     @CreatedDate

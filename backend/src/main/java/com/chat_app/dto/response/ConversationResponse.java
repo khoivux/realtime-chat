@@ -17,7 +17,7 @@ public class ConversationResponse {
     String id;
     String type;
     String participantsHash;
-    String convName;
+    String name;
     String convAvatar;
     List<ParticipantInfo> participants;
     Instant createdAt;

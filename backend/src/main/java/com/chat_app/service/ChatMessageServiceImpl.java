@@ -5,11 +5,13 @@ import com.chat_app.dto.request.ChatMessageRequest;
 import com.chat_app.dto.response.ChatMessageResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.mapper.ChatMessageMapper;
+import com.chat_app.mapper.ParticipantInfoMapper;
+import com.chat_app.mapper.UserMapper;
 import com.chat_app.model.ChatMessage;
 import com.chat_app.model.ParticipantInfo;
-import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
+import com.chat_app.repository.UserRepository;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,9 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     private final ChatMessageRepository chatMessageRepository;
     private final ConversationRepository conversationRepository;
     private final ChatMessageMapper chatMessageMapper;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final ParticipantInfoMapper participantInfoMapper;
 
     @Override
     public List<ChatMessageResponse> getMessagesByConversation(String conversationId) {
@@ -40,22 +45,34 @@ public class ChatMessageServiceImpl implements ChatMessageService{
 
     @Override
     public ChatMessageResponse create(ChatMessageRequest request) {
-        User currUser = UserUtils.getCurrUser();
+        String currUserId = UserUtils.getCurrUserId();
 
         conversationRepository.findById(request.getConversationId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
                 .getParticipants()
                 .stream()
-                .filter(participantInfo -> participantInfo.getUserId().equals(currUser.getId()))
+                .filter(participantInfo -> participantInfo.getUserId().equals(currUserId))
                 .findAny()
                 .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
 
         ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
         chatMessage.setSender(ParticipantInfo.builder()
-                        .userId(currUser.getId())
-                        .avatarUrl(currUser.getAvatarUrl())
-                        .displayName(currUser.getDisplayName())
+                .userId(currUserId)
+                .displayName(UserUtils.getCurrUser().getDisplayName())
                 .build());
+        return toChatMessageResponse(chatMessageRepository.save(chatMessage));
+    }
+
+    @Override
+    public ChatMessageResponse update(ChatMessageRequest request) {
+        ChatMessage chatMessage = chatMessageRepository.findByIdAndIsDeletedFalse(request.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CHATMESSAGE_NOT_FOUND));
+
+        if(!chatMessage.getSender().getUserId().equals(UserUtils.getCurrUserId())) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        chatMessage.setMessage(request.getMessage());
         return toChatMessageResponse(chatMessageRepository.save(chatMessage));
     }
 
@@ -75,6 +92,17 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage) {
         String currUserId = UserUtils.getCurrUserId();
         ChatMessageResponse response = chatMessageMapper.toChatMessageResponse(chatMessage);
+
+        if (chatMessage.getParentId() != null) {
+            chatMessageRepository.findByIdAndIsDeletedFalse(chatMessage.getParentId())
+                    .ifPresent(parent -> response.setParent(
+                            ChatMessageResponse.builder()
+                                    .id(parent.getId())
+                                    .message(parent.getMessage())
+                                    .build()
+                    ));
+        }
+        response.setSender(participantInfoMapper.toResponse(chatMessage.getSender()));
         response.setMine(currUserId.equals(chatMessage.getSender().getUserId()));
         return response;
     }
