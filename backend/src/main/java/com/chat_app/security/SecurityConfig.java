@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -36,7 +35,9 @@ public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
             "/users/confirm-email/**",
             "/api/v1/auth/**",
-            "/ws/**"
+            "/ws/**",
+            "/app/**",
+            "/topic/**"
     };
 
     private final String[] PUBLIC_ENDPOINTS_GET = {
@@ -48,8 +49,9 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/users/confirm-email/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .cors(Customizer.withDefaults())
@@ -75,7 +77,12 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return webSecurity ->
                 webSecurity.ignoring()
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/**", "/webjars/**");
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/**",
+                                "/webjars/**"
+                        );
     }
 
     @Bean

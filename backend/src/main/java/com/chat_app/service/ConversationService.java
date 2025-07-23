@@ -4,6 +4,8 @@ import com.chat_app.dto.request.ConversationRequest;
 import com.chat_app.dto.request.ParticipantRequest;
 import com.chat_app.dto.request.UpdateConversationRequest;
 import com.chat_app.dto.response.ConversationResponse;
+import com.chat_app.model.Conversation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,5 +18,12 @@ public interface ConversationService {
 
     ConversationResponse update(UpdateConversationRequest request);
 
-    void addOrDeleteUser(ParticipantRequest request);
+
+    @Transactional
+    void addParticipant(ParticipantRequest request);
+
+    @Transactional
+    void removeParticipant(ParticipantRequest request);
+
+    void checkConversationAccess(Conversation conversation, String userId);
 }

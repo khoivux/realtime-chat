@@ -1,12 +1,17 @@
 package com.chat_app.controller;
 
+import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ChatMessageRequest;
 import com.chat_app.dto.response.ApiResponse;
+import com.chat_app.exception.custom.AppException;
 import com.chat_app.service.ChatMessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j(topic = "CHAT_CONTROLLER")
@@ -17,12 +22,16 @@ import org.springframework.web.bind.annotation.*;
 public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
-    @PostMapping("/")
-    public ApiResponse<?> create(@Valid @RequestBody ChatMessageRequest request) {
-        return ApiResponse.builder()
-                .data(chatMessageService.create(request))
-                .message("Tạo tin nhắn thành công")
-                .build();
+    @MessageMapping("/chat.sendMessage")
+    public void sendMessage(@Payload ChatMessageRequest request, Authentication auth) {
+        if(auth != null) {
+            log.info(request.getMessage());
+            log.info(auth.getName());
+            request.setSenderId(auth.getName());
+            chatMessageService.sendMessage(request);
+        } else {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
     }
 
     @GetMapping("/{conversationId}")

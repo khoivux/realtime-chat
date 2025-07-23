@@ -1,5 +1,6 @@
 package com.chat_app.dto.request;
 
+import com.chat_app.constant.ChatType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,6 +14,6 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConversationRequest {
-    String type;
+    ChatType type;
     List<String> participantIds;
 }

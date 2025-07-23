@@ -8,17 +8,22 @@ import com.chat_app.dto.request.UpdateConversationRequest;
 import com.chat_app.dto.response.ConversationResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.mapper.ParticipantInfoMapper;
+import com.chat_app.model.ChatMessage;
 import com.chat_app.model.Conversation;
 import com.chat_app.model.ParticipantInfo;
 import com.chat_app.model.User;
+import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
+import com.chat_app.utils.MessageUtils;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -28,6 +33,7 @@ public class ConversationServiceImpl implements ConversationService{
     private final UserRepository userRepository;
     private final ConversationRepository conversationRepository;
     private final ParticipantInfoMapper participantInfoMapper;
+    private final ChatMessageRepository chatMessageRepository;
 
     /**
      * Returns all active conversations that the current user is participating in.
@@ -40,6 +46,8 @@ public class ConversationServiceImpl implements ConversationService{
         List<Conversation> conversations = conversationRepository.findAllActiveConversationsByUserId(currUserId);
         return conversations.stream()
                 .map(this::toResponse)
+                .sorted(Comparator.comparing(ConversationResponse::getLastActive,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
     /**
@@ -60,6 +68,7 @@ public class ConversationServiceImpl implements ConversationService{
      * @return Conversation Response
      */
     @Override
+    @Transactional
     public ConversationResponse create(ConversationRequest request) {
         String creatorId = UserUtils.getCurrUserId();
 
@@ -68,16 +77,13 @@ public class ConversationServiceImpl implements ConversationService{
             userIds.add(creatorId);
         }
 
-        List<String> sortedIds = userIds.stream()
-                .distinct()
-                .sorted()
-                .toList();
+        List<String> sortedIds = userIds.stream().distinct().sorted().toList();
 
         String userIdHash = generateParticipantHash(sortedIds);
         Conversation conversation = conversationRepository.findByParticipantHash(userIdHash)
                 .orElseGet(() -> {
                     // Create participant list
-                    List<ParticipantInfo> participants = createParticipants(sortedIds, creatorId);
+                    List<ParticipantInfo> participants = createParticipants(sortedIds);
                     if (participants.isEmpty()) {
                         throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
                     }
@@ -87,7 +93,7 @@ public class ConversationServiceImpl implements ConversationService{
                             .participantHash(userIdHash)
                             .participants(participants)
                             .build();
-                    if(request.getType().equals(ChatType.GROUP.name())) {
+                    if(request.getType() == ChatType.GROUP) {
                         newConversation.setName(participants.getFirst().getDisplayName() + ", " + participants.getLast().getDisplayName());
                     }
                     return conversationRepository.save(newConversation);
@@ -106,8 +112,9 @@ public class ConversationServiceImpl implements ConversationService{
     public ConversationResponse update(UpdateConversationRequest request) {
         Conversation conversation = conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
-        validPermission(conversation, UserUtils.getCurrUserId());
-        if(conversation.getType().equals(ChatType.DIRECT.name())) {
+
+        checkConversationAccess(conversation, UserUtils.getCurrUserId());
+        if(conversation.getType() == ChatType.DIRECT) {
             throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
         }
         conversation.setName(request.getName());
@@ -122,45 +129,51 @@ public class ConversationServiceImpl implements ConversationService{
      * @param request participant action request
      */
     @Override
-    public void addOrDeleteUser(ParticipantRequest request) {
-        String currUserId = UserUtils.getCurrUserId();
-        Conversation conversation = conversationRepository.findById(request.getConversationId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
-
-        if(conversation.getType().equals(ChatType.DIRECT.name())) {
-            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
-        }
-
+    @Transactional
+    public void addParticipant(ParticipantRequest request) {
+        Conversation conversation = getValidGroupConversation(request.getConversationId());
         List<ParticipantInfo> participants = conversation.getParticipants();
-        validPermission(conversation, currUserId);
 
-        if(request.isJoin()) {
-            ParticipantInfo participant = participants.stream()
-                    .filter(p -> p.getUserId().equals(request.getUserId()))
-                    .findAny()
-                    .orElseGet(() -> {
-                        ParticipantInfo newParticipant = ParticipantInfo.builder()
-                                .userId(request.getUserId())
-                                .build();
-                        participants.add(newParticipant);
-                        return newParticipant;
-                    });
+        ParticipantInfo participant = participants.stream()
+                .filter(p -> p.getUserId().equals(request.getUserId()))
+                .findAny()
+                .orElseGet(() -> {
+                    ParticipantInfo newParticipant = ParticipantInfo.builder()
+                            .userId(request.getUserId())
+                            .build();
+                    participants.add(newParticipant);
+                    return newParticipant;
+                });
 
-            participant.setJoinedAt(Instant.now());
-            participant.setLeftAt(null);
-        } else {
-            if(!conversation.getCreatedBy().equals(currUserId)) {
-                throw new AppException(ErrorCode.ACCESS_DENIED);
-            }
-            ParticipantInfo participant = conversation.getParticipants().stream()
-                    .filter(p -> p.getUserId().equals(request.getUserId()))
-                    .findAny()
-                    .orElseThrow(() -> new AppException(ErrorCode.ACCESS_DENIED));
+        participant.setJoinedAt(Instant.now());
+        participant.setLeftAt(null);
 
-            participant.setLeftAt(Instant.now());
-        }
         conversationRepository.save(conversation);
     }
+
+    /**
+     *
+     * @param request
+     */
+    @Override
+    @Transactional
+    public void removeParticipant(ParticipantRequest request) {
+        String currUserId = UserUtils.getCurrUserId();
+        Conversation conversation = getValidGroupConversation(request.getConversationId());
+
+        if(!conversation.getCreatedBy().equals(currUserId)) {
+            throw new AppException(ErrorCode.ACCESS_DENIED);
+        }
+
+        ParticipantInfo participant = conversation.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(request.getUserId()))
+                .findAny()
+                .orElseThrow(() -> new AppException(ErrorCode.ACCESS_DENIED));
+
+        participant.setLeftAt(Instant.now());
+        conversationRepository.save(conversation);
+    }
+
 
     /**
      * Generates a hash string from sorted participant IDs.
@@ -174,7 +187,15 @@ public class ConversationServiceImpl implements ConversationService{
         return stringJoiner.toString();
     }
 
-    private List<ParticipantInfo> createParticipants(List<String> ids, String adminId) {
+    @Override
+    public void checkConversationAccess(Conversation conversation, String userId) {
+        conversation.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(userId) && p.getLeftAt() == null)
+                .findAny()
+                .orElseThrow(() -> new AppException(ErrorCode.PARTICIPANT_NOT_EXISTED));
+    }
+
+    private List<ParticipantInfo> createParticipants(List<String> ids) {
         Instant now = Instant.now();
         return userRepository.findAllById(ids).stream()
                 .map(user -> ParticipantInfo.builder()
@@ -198,6 +219,11 @@ public class ConversationServiceImpl implements ConversationService{
                 .map(participantInfoMapper::toResponse)
                 .toList();
 
+        ChatMessage lastMessage = chatMessageRepository
+                .findFirstByConversationIdAndIsDeletedFalseOrderByCreatedAtDesc(conversation.getId())
+                .orElse(null);
+        Instant lastActive = lastMessage != null ? lastMessage.getCreatedAt() : null;
+
         ConversationResponse response = ConversationResponse.builder()
                 .id(conversation.getId())
                 .type(conversation.getType())
@@ -206,10 +232,12 @@ public class ConversationServiceImpl implements ConversationService{
                 .createdAt(conversation.getCreatedAt())
                 .updatedAt(conversation.getUpdatedAt())
                 .name(conversation.getName())
+                .lastActive(lastActive)
+                .lastMessagePreview(MessageUtils.getMessagePreview(lastMessage))
                 .build();
 
         User currUser = UserUtils.getCurrUser();
-        if (conversation.getType().equals(ChatType.DIRECT.name())) {
+        if (conversation.getType() == ChatType.DIRECT) {
             participantInfoResponse.stream()
                     .filter(p -> !p.getUserId().equals(currUser.getId()))
                     .findFirst().ifPresent(p -> {
@@ -220,19 +248,15 @@ public class ConversationServiceImpl implements ConversationService{
         return response;
     }
 
-    /**
-     * Validates that the current user is an active participant of the conversation.
-     *
-     * @param conversation the conversation
-     * @param currUserId the ID of the current user
-     */
-    private void validPermission(Conversation conversation, String currUserId) {
-        conversation.getParticipants().stream()
-                .filter(participant ->
-                        participant.getUserId().equals(currUserId)
-                                && participant.getLeftAt() == null
-                )
-                .findAny()
-                .orElseThrow(() -> new AppException(ErrorCode.ACCESS_DENIED));
+    private Conversation getValidGroupConversation(String conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        if (conversation.getType() == ChatType.DIRECT) {
+            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
+        }
+
+        return conversation;
     }
+
 }

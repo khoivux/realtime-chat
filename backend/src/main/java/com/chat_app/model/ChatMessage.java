@@ -1,9 +1,6 @@
 package com.chat_app.model;
 
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -15,6 +12,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
 @Document(collection = "chat_message")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatMessage {
@@ -32,4 +30,8 @@ public class ChatMessage {
     Instant updatedAt;
     @Builder.Default
     boolean isDeleted = false;
+
+    public ChatMessage() {
+        // constructor mặc định public
+    }
 }

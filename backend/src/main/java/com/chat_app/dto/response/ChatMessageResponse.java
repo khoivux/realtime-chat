@@ -21,5 +21,4 @@ public class ChatMessageResponse {
     Instant updatedAt;
     ChatMessageResponse parent;
     boolean isDeleted;
-    boolean isMine;
 }

@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface ChatMessageRepository extends MongoRepository<ChatMessage, String> {
     @Query(value = "{ 'conversationId': ?0, 'isDeleted': false }", sort = "{ 'createdDate': -1 }")
     List<ChatMessage> findByConversationId(String conversationId);
+    Optional<ChatMessage> findFirstByConversationIdAndIsDeletedFalseOrderByCreatedAtDesc(String conversationId);
     Optional<ChatMessage> findByIdAndIsDeletedFalse(String id);
 }

@@ -6,14 +6,15 @@ import com.chat_app.dto.response.ChatMessageResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.mapper.ChatMessageMapper;
 import com.chat_app.mapper.ParticipantInfoMapper;
-import com.chat_app.mapper.UserMapper;
 import com.chat_app.model.ChatMessage;
 import com.chat_app.model.ParticipantInfo;
+import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,42 +26,42 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     private final ConversationRepository conversationRepository;
     private final ChatMessageMapper chatMessageMapper;
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final ConversationService conversationService;
     private final ParticipantInfoMapper participantInfoMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public List<ChatMessageResponse> getMessagesByConversation(String conversationId) {
         String userId = UserUtils.getCurrUserId();
-        conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
-                .getParticipants()
-                .stream()
-                .filter(participantInfo -> userId.equals(participantInfo.getUserId()))
-                .findAny()
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        conversationService.checkConversationAccess(
+                conversationRepository.findByIdAndIsDeletedFalse(conversationId)
+                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
+                , userId);
 
         List<ChatMessage> messages = chatMessageRepository.findByConversationId(conversationId);
         return messages.stream().map(this::toChatMessageResponse).toList();
     }
 
     @Override
-    public ChatMessageResponse create(ChatMessageRequest request) {
-        String currUserId = UserUtils.getCurrUserId();
+    public void sendMessage(ChatMessageRequest request) {
+        User sender = userRepository.findById(request.getSenderId())
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
 
-        conversationRepository.findById(request.getConversationId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
-                .getParticipants()
-                .stream()
-                .filter(participantInfo -> participantInfo.getUserId().equals(currUserId))
-                .findAny()
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+        conversationService.checkConversationAccess(
+                conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
+                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
+                , sender.getId());
 
         ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
+
         chatMessage.setSender(ParticipantInfo.builder()
-                .userId(currUserId)
-                .displayName(UserUtils.getCurrUser().getDisplayName())
+                .userId(sender.getId())
+                .displayName(sender.getDisplayName())
                 .build());
-        return toChatMessageResponse(chatMessageRepository.save(chatMessage));
+
+        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        messagingTemplate.convertAndSend("/topic/conversations/" + request.getConversationId(), response);
     }
 
     @Override
@@ -90,7 +91,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     }
 
     private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage) {
-        String currUserId = UserUtils.getCurrUserId();
         ChatMessageResponse response = chatMessageMapper.toChatMessageResponse(chatMessage);
 
         if (chatMessage.getParentId() != null) {
@@ -103,7 +103,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                     ));
         }
         response.setSender(participantInfoMapper.toResponse(chatMessage.getSender()));
-        response.setMine(currUserId.equals(chatMessage.getSender().getUserId()));
         return response;
     }
 }

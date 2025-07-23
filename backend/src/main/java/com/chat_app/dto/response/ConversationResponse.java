@@ -1,5 +1,6 @@
 package com.chat_app.dto.response;
 
+import com.chat_app.constant.ChatType;
 import com.chat_app.model.ParticipantInfo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
@@ -15,11 +16,13 @@ import java.util.List;
 @AllArgsConstructor
 public class ConversationResponse {
     String id;
-    String type;
+    ChatType type;
     String participantsHash;
     String name;
     String convAvatar;
     List<ParticipantInfo> participants;
+    String lastMessagePreview;
+    Instant lastActive;
     Instant createdAt;
     Instant updatedAt;
 }

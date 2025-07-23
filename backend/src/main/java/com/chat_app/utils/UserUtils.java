@@ -5,6 +5,7 @@ import com.chat_app.exception.custom.AppException;
 import com.chat_app.model.User;
 import com.chat_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +21,8 @@ public class UserUtils {
     }
 
     public static String getCurrUserId() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
     }
 
     public static User getCurrUser() {

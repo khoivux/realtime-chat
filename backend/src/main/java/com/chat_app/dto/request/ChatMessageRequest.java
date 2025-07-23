@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatMessageRequest {
     String id;
+    String senderId;
     String conversationId;
     String message;
     String parentId;

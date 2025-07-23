@@ -1,5 +1,6 @@
 package com.chat_app.model;
 
+import com.chat_app.constant.ChatType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -22,7 +23,7 @@ public class Conversation {
     @Id
     @EqualsAndHashCode.Include
     private String id;
-    private String type;
+    private ChatType type;
     private String name;
 
     @Indexed(unique = true)

@@ -8,7 +8,7 @@ import java.util.List;
 public interface ChatMessageService {
     List<ChatMessageResponse> getMessagesByConversation(String conversationId);
 
-    ChatMessageResponse create(ChatMessageRequest request);
+    void sendMessage(ChatMessageRequest request);
 
     ChatMessageResponse update(ChatMessageRequest request);
 

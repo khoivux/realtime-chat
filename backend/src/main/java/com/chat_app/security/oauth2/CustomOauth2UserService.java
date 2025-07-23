@@ -1,6 +1,7 @@
 package com.chat_app.security.oauth2;
 
 import com.chat_app.constant.Oauth2Provider;
+import com.chat_app.constant.RoleName;
 import com.chat_app.exception.custom.ResourceNotFoundException;
 import com.chat_app.model.User;
 import com.chat_app.repository.RoleRepository;
@@ -16,8 +17,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 
 
@@ -54,7 +53,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
                     .displayName(oauth2UserInfo.getFullName())
                     .username(UserUtils.generateUsername(oauth2UserInfo.getEmail()))
                     .avatarUrl(oauth2UserInfo.getAvatarUrl())
-                    .role(null)
+                    .role(roleRepository.findByName(RoleName.USER))
                     .password(" ")
                     .isSocialLogin(true)
                     .build();
