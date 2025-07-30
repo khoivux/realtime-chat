@@ -3,6 +3,7 @@ package com.chat_app.controller;
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ChatMessageRequest;
 import com.chat_app.dto.response.ApiResponse;
+import com.chat_app.dto.response.ChatMessageResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.service.ChatMessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j(topic = "CHAT_CONTROLLER")
 @RestController
@@ -36,8 +39,9 @@ public class ChatMessageController {
 
     @GetMapping("/{conversationId}")
     public ApiResponse<?> getByConversation(@PathVariable String conversationId) {
+        List<ChatMessageResponse> responseList = chatMessageService.getMessagesByConversation(conversationId);
         return ApiResponse.builder()
-                .data(chatMessageService.getMessagesByConversation(conversationId))
+                .data(responseList)
                 .message("Lấy danh sách tin nhắn thành công")
                 .build();
     }

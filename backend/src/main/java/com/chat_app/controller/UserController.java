@@ -1,19 +1,13 @@
 package com.chat_app.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.UserResponse;
 import com.chat_app.service.UserService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -37,7 +31,14 @@ public class UserController {
     public ApiResponse<?> getList(@RequestParam String name) {
         return ApiResponse.builder()
                 .data(userService.getList(name))
-                .message("Lấy thành công danh sách user")
+                .build();
+    }
+
+    @Operation(summary = "Get online users")
+    @GetMapping("/online")
+    public ApiResponse<?> getOnlineUsers() {
+        return ApiResponse.builder()
+                .data(userService.getOnlineUserIds())
                 .build();
     }
 }
