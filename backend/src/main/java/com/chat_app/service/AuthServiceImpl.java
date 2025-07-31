@@ -1,5 +1,8 @@
 package com.chat_app.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.constant.RoleName;
 import com.chat_app.dto.request.LoginRequest;
@@ -17,10 +20,9 @@ import com.chat_app.repository.RoleRepository;
 import com.chat_app.repository.UserRepository;
 import com.chat_app.utils.UserUtils;
 import com.chat_app.validator.UserValidator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
