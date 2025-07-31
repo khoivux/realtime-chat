@@ -1,4 +1,4 @@
-package com.chat_app.config;
+package com.chat_app.config.websocket;
 
 import com.chat_app.security.CustomJwtDecoder;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +8,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -26,7 +27,8 @@ public class WebSocketInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        log.info("🔥 INTERCEPTOR CATCH DESTINATION: {}", accessor.getDestination());
+        log.info("INTERCEPTOR CATCH DESTINATION: {}", accessor.getDestination());
+
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
             if (authHeader == null || authHeader.isBlank()) {
@@ -38,13 +40,11 @@ public class WebSocketInterceptor implements ChannelInterceptor {
                 Jwt jwt = jwtDecoder.decode(token);
                 Authentication authentication = jwtAuthenticationConverter.convert(jwt);
                 accessor.setUser(authentication);
-                log.info("AUTH NAME: {}", authentication.getName());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.info("WEBSOCKET AUTH: {}", authentication.getName());
+                return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
             } catch (JwtException ex) {
-                log.warn("Invalid JWT during WebSocket CONNECT: {}", ex.getMessage());
-                throw new AccessDeniedException("Invalid JWT: " + ex.getMessage());
+                throw new AccessDeniedException("INVALID TOKEN: " + ex.getMessage());
             }
         }
 

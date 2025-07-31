@@ -1,4 +1,4 @@
-package com.chat_app.config;
+package com.chat_app.config.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

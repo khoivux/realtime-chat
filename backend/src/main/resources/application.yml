@@ -1,8 +1,5 @@
 server:
   port: 8081
-logging:
-  level:
-    org.springframework.web.socket: DEBUG
 spring:
   application:
     name: ChatApp

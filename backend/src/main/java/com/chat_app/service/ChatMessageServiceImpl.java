@@ -74,7 +74,9 @@ public class ChatMessageServiceImpl implements ChatMessageService{
         }
 
         chatMessage.setMessage(request.getMessage());
-        return toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        messagingTemplate.convertAndSend("/topic/conversations/" + response.getConversationId(), response);
+        return response;
     }
 
     @Override
@@ -88,6 +90,9 @@ public class ChatMessageServiceImpl implements ChatMessageService{
 
         chatMessage.setDeleted(true);
         chatMessageRepository.save(chatMessage);
+        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        response.setDeleted(true);
+        messagingTemplate.convertAndSend("/topic/conversations/" + response.getConversationId(), response);
     }
 
     private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage) {
