@@ -1,6 +1,7 @@
 package com.chat_app.service.chat;
 
 import com.chat_app.constant.ChatType;
+import com.chat_app.constant.Constants;
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ConversationRequest;
 import com.chat_app.dto.request.ParticipantRequest;
@@ -17,6 +18,8 @@ import com.chat_app.repository.UserRepository;
 import com.chat_app.utils.MessageUtils;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +31,13 @@ import java.util.StringJoiner;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ConversationServiceImpl implements ConversationService{
     private final UserRepository userRepository;
     private final ConversationRepository conversationRepository;
     private final ParticipantInfoMapper participantInfoMapper;
     private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Returns all active conversations that the current user is participating in.
@@ -93,12 +98,20 @@ public class ConversationServiceImpl implements ConversationService{
                             .participants(participants)
                             .build();
                     if(request.getType() == ChatType.GROUP) {
-                        newConversation.setName(participants.getFirst().getDisplayName() + ", " + participants.getLast().getDisplayName());
+                        newConversation.setName(participants.getFirst().getDisplayName()
+                                + ", "
+                                + participants.getLast().getDisplayName());
                     }
                     return conversationRepository.save(newConversation);
                 });
 
-        return toResponse(conversation);
+        ConversationResponse response = toResponse(conversation);
+
+        conversation.getParticipants().stream()
+                .map(ParticipantInfo::getUserId)
+                .forEach(userId -> messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX + userId, response));
+        
+        return response;
     }
 
     /**
@@ -116,10 +129,19 @@ public class ConversationServiceImpl implements ConversationService{
         if(conversation.getType() == ChatType.DIRECT) {
             throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
         }
-        conversation.setName(request.getName());
-        // any fields
-        //
-        return toResponse(conversationRepository.save(conversation));
+
+        if(request.getName() != null) {
+            conversation.setName(request.getName());
+        }
+        if(request.getAvatarUrl() != null) {
+            conversation.setConvAvatar(request.getAvatarUrl());
+        }
+        
+        Conversation savedConversation = conversationRepository.save(conversation);
+        ConversationResponse response = toResponse(savedConversation);
+
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATION_UPDATE_PREFIX + conversation.getId(), response);
+        return response;
     }
 
     /**
@@ -160,7 +182,7 @@ public class ConversationServiceImpl implements ConversationService{
         String currUserId = UserUtils.getCurrUserId();
         Conversation conversation = getValidGroupConversation(request.getConversationId());
 
-        if(!conversation.getCreatedBy().equals(currUserId)) {
+        if(!conversation.getCreatedBy().equals(currUserId) && !currUserId.equals(request.getUserId())) {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -277,6 +299,9 @@ public class ConversationServiceImpl implements ConversationService{
                         response.setConvAvatar(userRepository.getAvatarUrlAndDisplayNameById(p.getUserId()).get().getAvatarUrl());
                         response.setName(p.getDisplayName());
                     });
+        } else if (conversation.getType() == ChatType.GROUP) {
+            // For GROUP, use conversation's own avatar if available
+            response.setConvAvatar(conversation.getConvAvatar());
         }
         return response;
     }
@@ -291,5 +316,4 @@ public class ConversationServiceImpl implements ConversationService{
 
         return conversation;
     }
-
 }
