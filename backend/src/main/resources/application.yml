@@ -1,41 +1,40 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT}
 spring:
   application:
-    name: ChatApp
+    name: ${SPRING_APP_NAME}
   data:
     mongodb:
-      host: localhost
-      port: 27017
-      database: test
+      host: ${MONGODB_HOST}
+      port: ${MONGODB_PORT}
+      database: ${MONGODB_DATABASE}
       auto-index-creation: true
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
   sendgrid:
-    api-key: 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
-    from-email: devblog2025@gmail.com
-    template-id: d-b68245d3c6e84450b9f5087a2c306bad
-    verification-link: http://localhost:8082/users/confirm-email
+    api-key: ${SENDGRID_API_KEY}
+    from-email: ${SENDGRID_FROM_EMAIL}
+    template-id: ${SENDGRID_TEMPLATE_ID}
+    verification-link: ${SENDGRID_VERIFICATION_LINK}
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: 1005045408520-2s03lq13d8ipb40qgufnc1hne50jfju4.apps.googleusercontent.com
-            client-secret: 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
-            redirect-uri: http://localhost:8082/login/oauth2/code/google
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
             scope:
               - email
               - profile
           github:
-            client-id: Ov23lisHJ656HvrwO7uU
-            client-secret: 393ec983bd0fff47761ee453ac0a764ef1d06dba
-            redirect-uri: http://localhost:8082/login/oauth2/code/github
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            redirect-uri: ${GITHUB_REDIRECT_URI}
             scope:
               - read:user
               - user:email
-
         provider:
           github:
             authorization-uri: https://github.com/login/oauth/authorize
@@ -45,9 +44,14 @@ spring:
 
 app:
   oauth2:
-    redirect-uri: http://localhost:5173/auth/oauth2/callback
+    redirect-uri: ${APP_OAUTH2_REDIRECT_URI}
 
 jwt:
-  signerKey: LroCJll3Pkc1EUJJneM6+LLn5jOl2sOkJ6Ly5EyGJgf4JC9JMy1SfpKoF8kAJNqG
-  valid-duration: 1 # hour
-  refreshable-duration: 24
+  signerKey: ${JWT_SIGNER_KEY}
+  valid-duration: ${JWT_VALID_DURATION}
+  refreshable-duration: ${JWT_REFRESHABLE_DURATION}
+
+cloudinary:
+  cloud-name: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}

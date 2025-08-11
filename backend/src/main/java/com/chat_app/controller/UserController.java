@@ -1,15 +1,17 @@
 package com.chat_app.controller;
 
+import com.chat_app.dto.request.UpdateUserRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.UserResponse;
-import com.chat_app.service.UserService;
+import com.chat_app.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
+@Slf4j(topic = "USER-CONTROLLER")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
@@ -41,4 +43,10 @@ public class UserController {
                 .data(userService.getOnlineUserIds())
                 .build();
     }
-}
+
+    @PatchMapping("/profile")
+    public ApiResponse<?> updateProfile(@Valid @RequestBody  UpdateUserRequest request) {
+        return ApiResponse.builder()
+                .data(userService.updateProfile(request))
+                .build();
+    }}

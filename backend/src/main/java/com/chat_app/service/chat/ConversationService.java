@@ -1,4 +1,4 @@
-package com.chat_app.service;
+package com.chat_app.service.chat;
 
 import com.chat_app.dto.request.ConversationRequest;
 import com.chat_app.dto.request.ParticipantRequest;
@@ -24,6 +24,8 @@ public interface ConversationService {
 
     @Transactional
     void removeParticipant(ParticipantRequest request);
+
+    void markAsRead(String conversationId);
 
     void checkConversationAccess(Conversation conversation, String userId);
 }

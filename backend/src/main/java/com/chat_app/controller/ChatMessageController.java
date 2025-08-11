@@ -4,8 +4,9 @@ import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ChatMessageRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.ChatMessageResponse;
+import com.chat_app.dto.response.OffsetResponse;
 import com.chat_app.exception.custom.AppException;
-import com.chat_app.service.ChatMessageService;
+import com.chat_app.service.chat.ChatMessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +16,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j(topic = "CHAT_CONTROLLER")
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +23,18 @@ import java.util.List;
 @Tag(name = "Chat Message Controller")
 public class ChatMessageController {
     private final ChatMessageService chatMessageService;
+
+    @GetMapping("/{conversationId}")
+    public ApiResponse<?> getByConversation(
+            @PathVariable String conversationId,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        OffsetResponse<ChatMessageResponse> responses = chatMessageService.getMessagesByConversation(conversationId, offset, limit);
+        return ApiResponse.builder()
+                .data(responses)
+                .build();
+    }
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessageRequest request, Authentication auth) {
@@ -37,20 +48,10 @@ public class ChatMessageController {
         }
     }
 
-    @GetMapping("/{conversationId}")
-    public ApiResponse<?> getByConversation(@PathVariable String conversationId) {
-        List<ChatMessageResponse> responseList = chatMessageService.getMessagesByConversation(conversationId);
-        return ApiResponse.builder()
-                .data(responseList)
-                .message("Lấy danh sách tin nhắn thành công")
-                .build();
-    }
-
     @PatchMapping("/")
     public ApiResponse<?> updateChatMessage(@Valid @RequestBody ChatMessageRequest request) {
         return ApiResponse.builder()
                 .data(chatMessageService.update(request))
-                .message("Cap nhat tin nhan thanh cong")
                 .build();
     }
 

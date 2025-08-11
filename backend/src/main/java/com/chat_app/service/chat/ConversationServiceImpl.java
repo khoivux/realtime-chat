@@ -1,4 +1,4 @@
-package com.chat_app.service;
+package com.chat_app.service.chat;
 
 import com.chat_app.constant.ChatType;
 import com.chat_app.constant.ErrorCode;
@@ -11,7 +11,6 @@ import com.chat_app.mapper.ParticipantInfoMapper;
 import com.chat_app.model.ChatMessage;
 import com.chat_app.model.Conversation;
 import com.chat_app.model.ParticipantInfo;
-import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
@@ -174,6 +173,47 @@ public class ConversationServiceImpl implements ConversationService{
         conversationRepository.save(conversation);
     }
 
+    @Override
+    public void markAsRead(String conversationId) {
+        String userId = UserUtils.getCurrUserId();
+
+        Conversation conversation = conversationRepository.findByIdAndIsDeletedFalse(conversationId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        ParticipantInfo participant = conversation.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(userId)).findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.PARTICIPANT_NOT_EXISTED));
+
+        ChatMessage lastMessage = chatMessageRepository
+                .findFirstByConversationIdAndIsDeletedFalseOrderByCreatedAtDesc(conversation.getId())
+                .orElse(null);
+        String lastSeenMessageId = lastMessage != null ? lastMessage.getId() : null;
+        participant.setLastSeenMessage(lastSeenMessageId);
+
+        conversationRepository.save(conversation);
+    }
+
+
+    @Override
+    public void checkConversationAccess(Conversation conversation, String userId) {
+        conversation.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(userId) && p.getLeftAt() == null)
+                .findAny()
+                .orElseThrow(() -> new AppException(ErrorCode.PARTICIPANT_NOT_EXISTED));
+    }
+
+    private Long getUnreadCount(Conversation conversation, String userId) {
+        ParticipantInfo participant = conversation.getParticipants().stream()
+                .filter(p -> p.getUserId().equals(userId)).findFirst().orElseThrow();
+
+        Instant lastReadAt = Instant.EPOCH;
+        if (participant.getLastSeenMessage() != null) {
+            ChatMessage msg = chatMessageRepository.findByIdAndIsDeletedFalse(participant.getLastSeenMessage())
+                    .orElse(null);
+            if (msg != null) lastReadAt = msg.getCreatedAt();
+        }
+        return chatMessageRepository.countByConversationIdAndCreatedAtAfterAndIsDeletedFalse(conversation.getId(), lastReadAt);
+    }
 
     /**
      * Generates a hash string from sorted participant IDs.
@@ -185,14 +225,6 @@ public class ConversationServiceImpl implements ConversationService{
         StringJoiner stringJoiner = new StringJoiner("_");
         participantIds.forEach(stringJoiner::add);
         return stringJoiner.toString();
-    }
-
-    @Override
-    public void checkConversationAccess(Conversation conversation, String userId) {
-        conversation.getParticipants().stream()
-                .filter(p -> p.getUserId().equals(userId) && p.getLeftAt() == null)
-                .findAny()
-                .orElseThrow(() -> new AppException(ErrorCode.PARTICIPANT_NOT_EXISTED));
     }
 
     private List<ParticipantInfo> createParticipants(List<String> ids) {
@@ -224,6 +256,7 @@ public class ConversationServiceImpl implements ConversationService{
                 .orElse(null);
         Instant lastActive = lastMessage != null ? lastMessage.getCreatedAt() : null;
 
+        String userId = UserUtils.getCurrUserId();
         ConversationResponse response = ConversationResponse.builder()
                 .id(conversation.getId())
                 .type(conversation.getType())
@@ -234,12 +267,12 @@ public class ConversationServiceImpl implements ConversationService{
                 .name(conversation.getName())
                 .lastActive(lastActive)
                 .lastMessagePreview(MessageUtils.getMessagePreview(lastMessage))
+                .unreadCount(getUnreadCount(conversation, userId))
                 .build();
 
-        User currUser = UserUtils.getCurrUser();
         if (conversation.getType() == ChatType.DIRECT) {
             participantInfoResponse.stream()
-                    .filter(p -> !p.getUserId().equals(currUser.getId()))
+                    .filter(p -> !p.getUserId().equals(userId))
                     .findFirst().ifPresent(p -> {
                         response.setConvAvatar(userRepository.getAvatarUrlAndDisplayNameById(p.getUserId()).get().getAvatarUrl());
                         response.setName(p.getDisplayName());

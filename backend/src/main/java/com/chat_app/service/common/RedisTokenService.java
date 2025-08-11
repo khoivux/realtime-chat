@@ -1,4 +1,4 @@
-package com.chat_app.service;
+package com.chat_app.service.common;
 
 import com.chat_app.exception.custom.ResourceNotFoundException;
 import com.chat_app.model.RedisToken;

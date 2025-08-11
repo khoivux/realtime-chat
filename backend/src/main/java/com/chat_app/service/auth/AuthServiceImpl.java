@@ -1,5 +1,7 @@
-package com.chat_app.service;
+package com.chat_app.service.auth;
 
+import com.chat_app.constant.Constants;
+import com.chat_app.service.common.RedisTokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +37,6 @@ public class AuthServiceImpl implements AuthService{
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
-    protected String DEFAULT_AVATAR_URL = "http://res.cloudinary.com/drdjvonsx/image/upload/v1741858825/ad2h5wifjk0xdqmawf9x.png";
 
     @Override
     public UserResponse register(RegisterRequest request) {
@@ -48,7 +49,7 @@ public class AuthServiceImpl implements AuthService{
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                .avatarUrl(DEFAULT_AVATAR_URL)
+                .avatarUrl(Constants.DEFAULT_AVATAR_URL)
                 .displayName(request.getFirstname() + " " + request.getLastname())
                 .role(role)
                 .build();

@@ -1,5 +1,6 @@
 package com.chat_app.dto.response;
 
+import com.chat_app.constant.MessageType;
 import com.chat_app.model.ParticipantInfo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
@@ -17,6 +18,8 @@ public class ChatMessageResponse {
     String conversationId;
     String message;
     ParticipantInfo sender;
+    String mediaUrl;
+    MessageType type;
     Instant createdAt;
     Instant updatedAt;
     ChatMessageResponse parent;

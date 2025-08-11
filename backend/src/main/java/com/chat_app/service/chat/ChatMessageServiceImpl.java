@@ -1,8 +1,10 @@
-package com.chat_app.service;
+package com.chat_app.service.chat;
 
+import com.chat_app.constant.Constants;
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ChatMessageRequest;
 import com.chat_app.dto.response.ChatMessageResponse;
+import com.chat_app.dto.response.OffsetResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.mapper.ChatMessageMapper;
 import com.chat_app.mapper.ParticipantInfoMapper;
@@ -12,8 +14,12 @@ import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
+import com.chat_app.service.common.UploadService;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.OffsetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +33,13 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     private final ChatMessageMapper chatMessageMapper;
     private final UserRepository userRepository;
     private final ConversationService conversationService;
+    private final UploadService uploadService;
     private final ParticipantInfoMapper participantInfoMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
+
     @Override
-    public List<ChatMessageResponse> getMessagesByConversation(String conversationId) {
+    public OffsetResponse<ChatMessageResponse> getMessagesByConversation(String conversationId, int offset, int limit) {
         String userId = UserUtils.getCurrUserId();
 
         conversationService.checkConversationAccess(
@@ -39,8 +47,16 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                         .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
                 , userId);
 
-        List<ChatMessage> messages = chatMessageRepository.findByConversationId(conversationId);
-        return messages.stream().map(this::toChatMessageResponse).toList();
+        OffsetScrollPosition position =  offset > 0 ? ScrollPosition.offset(offset - 1) : ScrollPosition.offset();
+        List<ChatMessageResponse> messages = chatMessageRepository.getByConversationId(conversationId, position, Limit.of(limit))
+                .getContent().stream()
+                .map(this::toChatMessageResponse)
+                .toList();
+
+        return OffsetResponse.<ChatMessageResponse>builder()
+                .content(messages)
+                .nextOffset(messages.size() == limit ? offset + messages.size() : offset)
+                .build();
     }
 
     @Override
@@ -48,10 +64,10 @@ public class ChatMessageServiceImpl implements ChatMessageService{
         User sender = userRepository.findById(request.getSenderId())
                         .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
 
-        conversationService.checkConversationAccess(
-                conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
-                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
-                , sender.getId());
+        var conversation = conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        conversationService.checkConversationAccess(conversation, sender.getId());
 
         ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
 
@@ -61,7 +77,18 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                 .build());
 
         ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
-        messagingTemplate.convertAndSend("/topic/conversations/" + request.getConversationId(), response);
+        
+        // Broadcast tin nhắn đến conversation
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
+        
+        // Broadcast cập nhật chat list cho tất cả participants để conversation nhảy lên đầu
+        conversation.getParticipants().stream()
+                .filter(p -> p.getLeftAt() == null) // Chỉ các participant đang active
+                .map(ParticipantInfo::getUserId)
+                .forEach(userId -> {
+                    System.out.println("Broadcasting chat list update to user: " + userId + " for conversation: " + conversation.getId());
+                    messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX + userId, "CHAT_LIST_UPDATE");
+                });
     }
 
     @Override
@@ -75,7 +102,7 @@ public class ChatMessageServiceImpl implements ChatMessageService{
 
         chatMessage.setMessage(request.getMessage());
         ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
-        messagingTemplate.convertAndSend("/topic/conversations/" + response.getConversationId(), response);
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX + response.getConversationId(), response);
         return response;
     }
 
@@ -92,7 +119,7 @@ public class ChatMessageServiceImpl implements ChatMessageService{
         chatMessageRepository.save(chatMessage);
         ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
         response.setDeleted(true);
-        messagingTemplate.convertAndSend("/topic/conversations/" + response.getConversationId(), response);
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + response.getConversationId(), response);
     }
 
     private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage) {

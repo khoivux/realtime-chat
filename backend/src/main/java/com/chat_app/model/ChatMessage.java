@@ -1,5 +1,6 @@
 package com.chat_app.model;
 
+import com.chat_app.constant.MessageType;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -24,6 +25,8 @@ public class ChatMessage {
     private String message;
     private ParticipantInfo sender;
     private String parentId;
+    private MessageType type;
+    private String mediaUrl;
     @CreatedDate
     Instant createdAt;
     @LastModifiedDate

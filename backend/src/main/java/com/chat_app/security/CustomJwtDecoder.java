@@ -1,7 +1,7 @@
 package com.chat_app.security;
 
 
-import com.chat_app.service.JwtService;
+import com.chat_app.service.auth.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;

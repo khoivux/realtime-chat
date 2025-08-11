@@ -1,15 +1,13 @@
 package com.chat_app.controller;
 
-import com.chat_app.constant.ErrorCode;
+
 import com.chat_app.dto.request.LoginRequest;
 import com.chat_app.dto.request.LogoutRequest;
 import com.chat_app.dto.request.RegisterRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.AuthResponse;
 import com.chat_app.dto.response.UserResponse;
-import com.chat_app.exception.custom.AppException;
-import com.chat_app.service.AuthService;
-import com.nimbusds.jose.JOSEException;
+import com.chat_app.service.auth.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

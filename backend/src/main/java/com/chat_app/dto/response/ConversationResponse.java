@@ -22,6 +22,7 @@ public class ConversationResponse {
     String convAvatar;
     List<ParticipantInfo> participants;
     String lastMessagePreview;
+    Long unreadCount;
     Instant lastActive;
     Instant createdAt;
     Instant updatedAt;

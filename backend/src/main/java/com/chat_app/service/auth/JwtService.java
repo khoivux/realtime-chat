@@ -1,4 +1,4 @@
-package com.chat_app.service;
+package com.chat_app.service.auth;
 
 import com.chat_app.model.User;
 

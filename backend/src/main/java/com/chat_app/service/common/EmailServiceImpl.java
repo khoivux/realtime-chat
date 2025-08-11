@@ -1,4 +1,4 @@
-package com.chat_app.service;
+package com.chat_app.service.common;
 
 import com.sendgrid.Method;
 import com.sendgrid.Request;

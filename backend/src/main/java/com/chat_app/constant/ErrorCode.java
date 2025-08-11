@@ -25,6 +25,7 @@ public enum ErrorCode {
     PARTICIPANT_NOT_EXISTED(1017, "Bạn không tham gia nhóm chat này", HttpStatus.NOT_FOUND),
     EMPTY_DATA(1018, "Vui lòng nhập đầy đủ thông tin", HttpStatus.BAD_REQUEST),
     UPLOAD_FAIL(1019, "Không thể tải file", HttpStatus.BAD_REQUEST),
+    DELETE_FAIL(1025, "Không thể xóa file", HttpStatus.BAD_REQUEST),
     NOT_HAVE_ROLE(1020, "Chức năng không thuộc quyền hạn người dùng", HttpStatus.FORBIDDEN),
     BLOCKED_USER(1021 ,"Tài khoản này đã bị khóa", HttpStatus.BAD_REQUEST),
     LOGIN_FAILED(1022 ,"Tên tài khoản hoặc mật khẩu không đúng", HttpStatus.BAD_REQUEST),

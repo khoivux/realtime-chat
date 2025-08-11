@@ -19,4 +19,5 @@ public class ParticipantInfo {
     private Instant updatedAt;
     private Instant leftAt;
     private String avatarUrl;
+    private String lastSeenMessage;
 }
