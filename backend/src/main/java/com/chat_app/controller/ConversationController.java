@@ -1,16 +1,25 @@
 package com.chat_app.controller;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.chat_app.dto.request.ConversationRequest;
 import com.chat_app.dto.request.ParticipantRequest;
 import com.chat_app.dto.request.UpdateConversationRequest;
 import com.chat_app.dto.response.ApiResponse;
 import com.chat_app.dto.response.ConversationResponse;
 import com.chat_app.service.chat.ConversationService;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
 
 @Slf4j(topic = "CONVERSATION-CONTROLLER")
 @RestController
@@ -51,6 +60,11 @@ public class ConversationController {
 
     @PatchMapping("/add-user")
     public ApiResponse<?> addParticipant(@RequestBody ParticipantRequest request) {
+        System.out.println("=== ADD USER CONTROLLER ===");
+        System.out.println("ParticipantRequest: " + request);
+        System.out.println("UserId: " + request.getUserId());
+        System.out.println("ConversationId: " + request.getConversationId());
+        
         conversationService.addParticipant(request);
         return ApiResponse.builder()
                 .message("Thêm người dùng thành công")

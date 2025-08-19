@@ -14,6 +14,7 @@ import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
+import com.chat_app.service.common.NotificationService;
 import com.chat_app.service.common.UploadService;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     private final UserRepository userRepository;
     private final ConversationService conversationService;
     private final UploadService uploadService;
+    private final NotificationService notificationService;
     private final ParticipantInfoMapper participantInfoMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -77,18 +79,8 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                 .build());
 
         ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
-        
-        // Broadcast tin nhắn đến conversation
+        notificationService.sendToConversation(conversation, chatMessage);
         messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
-        
-        // Broadcast cập nhật chat list cho tất cả participants để conversation nhảy lên đầu
-        conversation.getParticipants().stream()
-                .filter(p -> p.getLeftAt() == null) // Chỉ các participant đang active
-                .map(ParticipantInfo::getUserId)
-                .forEach(userId -> {
-                    System.out.println("Broadcasting chat list update to user: " + userId + " for conversation: " + conversation.getId());
-                    messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX + userId, "CHAT_LIST_UPDATE");
-                });
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.chat_app.security;
 
 
+import com.chat_app.constant.Constants;
 import com.chat_app.service.auth.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,7 @@ public class CustomJwtDecoder implements JwtDecoder {
         }
         if (Objects.isNull(nimbusJwtDecoder)) {
             byte[] decodedKey = Base64.getDecoder().decode(signerKey);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(decodedKey, "HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(decodedKey, Constants.JWT_SIGNATURE_ALGORITHM);
             nimbusJwtDecoder = NimbusJwtDecoder.withSecretKey(secretKeySpec)
                     .macAlgorithm(MacAlgorithm.HS256)
                     .build();

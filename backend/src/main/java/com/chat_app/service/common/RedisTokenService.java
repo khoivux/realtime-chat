@@ -14,8 +14,7 @@ public class RedisTokenService {
     private final RedisTokenRepository redisTokenRepository;
 
     public void save(RedisToken token) {
-        RedisToken res = redisTokenRepository.save(token);
-        log.info("Token ID: {}", res.getId());
+        redisTokenRepository.save(token);
     }
 
     public void delete(String id) {
@@ -23,6 +22,7 @@ public class RedisTokenService {
     }
 
     public RedisToken getById(String id) {
-        return redisTokenRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Redis Token not found"));
+        return redisTokenRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Redis Token not found"));
     }
 }

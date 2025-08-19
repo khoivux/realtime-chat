@@ -287,6 +287,7 @@ public class ConversationServiceImpl implements ConversationService{
                 .createdAt(conversation.getCreatedAt())
                 .updatedAt(conversation.getUpdatedAt())
                 .name(conversation.getName())
+                .createdBy(conversation.getCreatedBy())
                 .lastActive(lastActive)
                 .lastMessagePreview(MessageUtils.getMessagePreview(lastMessage))
                 .unreadCount(getUnreadCount(conversation, userId))
@@ -313,7 +314,6 @@ public class ConversationServiceImpl implements ConversationService{
         if (conversation.getType() == ChatType.DIRECT) {
             throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
         }
-
         return conversation;
     }
 }

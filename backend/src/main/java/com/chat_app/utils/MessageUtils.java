@@ -13,7 +13,6 @@ public class MessageUtils {
         if(message == null) {
             return null;
         }
-
         ParticipantInfo sender = message.getSender();
         String senderPreviewName = sender.getUserId().equals(UserUtils.getCurrUserId())
                 ? "Bạn" : sender.getDisplayName();
