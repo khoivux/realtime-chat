@@ -4,6 +4,7 @@ import com.chat_app.constant.Constants;
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.UpdateUserRequest;
 import com.chat_app.dto.response.UserResponse;
+import com.chat_app.dto.response.stats.UserStatsResponse;
 import com.chat_app.exception.custom.AppException;
 import com.chat_app.mapper.UserMapper;
 import com.chat_app.model.User;
@@ -15,8 +16,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -28,9 +31,8 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserResponse getByUsername(String username) {
-
-        User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         return userMapper.toResponse(user);
     }
 
@@ -50,8 +52,10 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public List<UserResponse> getList(String name) {
-        log.info("SEARCH USER BY: {}", name);
-        List<User> users = userRepository.findByUsernameOrDisplayName(name);
+        List<User> users = (name == null || name.isBlank())
+                ? userRepository.findAll()
+                : userRepository.findByUsernameOrDisplayName(name);
+
         return users.stream()
                 .map(userMapper::toResponse)
                 .toList();
@@ -74,5 +78,26 @@ public class UserServiceImpl implements UserService{
 
         user.setIsBlocked(blocked);
         userRepository.save(user);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserStatsResponse getUserStats(LocalDate date) {
+        ZoneId zone = ZoneId.systemDefault();
+        Instant startOfDay = date.atStartOfDay(zone).toInstant();
+        Instant endOfDay = date.plusDays(1).atStartOfDay(zone).toInstant();
+
+        long onlineUsers = this.getOnlineUserIds().size();
+        long newUsers = userRepository.countByCreatedAtBetween(startOfDay, endOfDay);
+        long totalUsers = userRepository.count();
+        long bannedUsers = userRepository.countByIsBlockedTrue();
+
+        return UserStatsResponse.builder()
+                .totalUsers(totalUsers)
+                .activeUsers(totalUsers - bannedUsers)
+                .onlineUsers(onlineUsers)
+                .bannedUsers(bannedUsers)
+                .newUsers(newUsers)
+                .build();
     }
 }

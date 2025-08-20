@@ -18,4 +18,5 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
     long countByConversationIdAndCreatedAtAfterAndIsDeletedFalse(String conversationId, Instant createdAt);
     Optional<ChatMessage> findFirstByConversationIdAndIsDeletedFalseOrderByCreatedAtDesc(String conversationId);
     Optional<ChatMessage> findByIdAndIsDeletedFalse(String id);
+    long countByCreatedAtBetween(Instant start, Instant end);
 }

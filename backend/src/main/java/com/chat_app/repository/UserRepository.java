@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,4 +21,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<ParticipantInfoProjection> getAvatarUrlAndDisplayNameById(String userId);
     @Query("{ $or: [ { 'username': { $regex: ?0, $options: 'i' } }, { 'displayName': { $regex: ?0, $options: 'i' } } ] }")
     List<User> findByUsernameOrDisplayName(String keyword);
+
+    long countByIsBlockedTrue();
+    long countByCreatedAtBetween(Instant start, Instant end);
 }

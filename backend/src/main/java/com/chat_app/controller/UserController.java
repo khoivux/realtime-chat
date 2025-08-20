@@ -2,7 +2,6 @@ package com.chat_app.controller;
 
 import com.chat_app.dto.request.UpdateUserRequest;
 import com.chat_app.dto.response.ApiResponse;
-import com.chat_app.dto.response.UserResponse;
 import com.chat_app.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,12 +18,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
-    @Operation(summary = "Get By Username")
+    @Operation(summary = "Get User")
     @GetMapping("/{username}")
-    public ApiResponse<UserResponse> getByUsername(@PathVariable String username) {
-        return ApiResponse.<UserResponse>builder()
+    public ApiResponse<?> getByUsername(@PathVariable String username) {
+        return ApiResponse.builder()
                 .data(userService.getByUsername(username))
-                .message("Lấy thành công thông tin user @" + username)
                 .build();
     }
 
@@ -49,4 +47,5 @@ public class UserController {
         return ApiResponse.builder()
                 .data(userService.updateProfile(request))
                 .build();
-    }}
+    }
+}

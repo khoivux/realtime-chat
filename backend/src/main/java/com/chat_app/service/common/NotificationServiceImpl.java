@@ -24,15 +24,12 @@ public class NotificationServiceImpl implements NotificationService{
     @Override
     public void sendToConversation(Conversation conversation, ChatMessage chatMessage) {
         List<String> onlineUserIds = userService.getOnlineUserIds();
-        log.info("[Notification] Online users: {}", onlineUserIds);
 
         List<String> offlineParticipantIds = conversation.getParticipants().stream()
                 .map(ParticipantInfo::getUserId)
                 .filter(id -> !id.equals(chatMessage.getSender().getUserId()))
                 .filter(id -> !onlineUserIds.contains(id))
                 .toList();
-        log.info("[Notification] Offline participants in conversation {}: {}",
-                conversation.getId(), offlineParticipantIds);
 
         List<String> tokens = offlineParticipantIds.stream()
                 .map(fcmTokenRepository::findById)
@@ -56,14 +53,11 @@ public class NotificationServiceImpl implements NotificationService{
                                 .build())
                         .build();
 
-                log.info("[Notification] Sending message to {} tokens, conversationId={}, sender={}",
-                        tokens.size(), conversation.getId(), chatMessage.getSender().getUserId());
-
                 BatchResponse response = FirebaseMessaging.getInstance()
                         .sendEachForMulticast(message);
-
                 log.info("[Notification] Send result: success={}, failure={}",
                         response.getSuccessCount(), response.getFailureCount());
+
             } catch (FirebaseMessagingException e) {
                 log.error("Send Notification Failed");
             }
