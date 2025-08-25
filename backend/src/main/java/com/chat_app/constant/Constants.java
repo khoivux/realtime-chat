@@ -6,7 +6,7 @@ public final class Constants {
 
     // Default Source
     public static final String DEFAULT_AVATAR_URL = "http://res.cloudinary.com/drdjvonsx/image/upload/v1741858825/ad2h5wifjk0xdqmawf9x.png";
-
+    public static final String DEFAULT_ADMIN_PASSWORD = "12345";
     // Websocket
     public static final String TOPIC_CONVERSATIONS_PREFIX = "/topic/conversations/";
 
