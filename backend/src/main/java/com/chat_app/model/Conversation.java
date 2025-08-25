@@ -25,7 +25,6 @@ public class Conversation {
     private String id;
     private ChatType type;
     private String name;
-    private String convAvatar; // Group avatar URL
 
     @Indexed(unique = true)
     String participantHash;

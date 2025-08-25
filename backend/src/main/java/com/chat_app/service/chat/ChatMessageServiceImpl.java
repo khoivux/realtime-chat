@@ -16,7 +16,6 @@ import com.chat_app.model.User;
 import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
-import com.chat_app.service.common.NotificationService;
 import com.chat_app.service.common.UploadService;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +30,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,16 +43,15 @@ import java.util.stream.IntStream;
 @Service
 @RequiredArgsConstructor
 public class ChatMessageServiceImpl implements ChatMessageService{
-    private final MongoTemplate mongoTemplate;
     private final ChatMessageRepository chatMessageRepository;
     private final ConversationRepository conversationRepository;
     private final ChatMessageMapper chatMessageMapper;
     private final UserRepository userRepository;
     private final ConversationService conversationService;
     private final UploadService uploadService;
-    private final NotificationService notificationService;
     private final ParticipantInfoMapper participantInfoMapper;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MongoTemplate mongoTemplate;
 
 
     @Override
@@ -74,28 +73,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                 .content(messages)
                 .nextOffset(messages.size() == limit ? offset + messages.size() : offset)
                 .build();
-    }
-
-    @Override
-    public void sendMessage(ChatMessageRequest request) {
-        User sender = userRepository.findById(request.getSenderId())
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
-
-        var conversation = conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
-                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
-
-        conversationService.checkConversationAccess(conversation, sender.getId());
-
-        ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
-
-        chatMessage.setSender(ParticipantInfo.builder()
-                .userId(sender.getId())
-                .displayName(sender.getDisplayName())
-                .build());
-
-        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
-        notificationService.sendToConversation(conversation, chatMessage);
-        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
     }
 
     @Override
@@ -127,6 +104,28 @@ public class ChatMessageServiceImpl implements ChatMessageService{
         ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
         response.setDeleted(true);
         messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + response.getConversationId(), response);
+    }
+
+    @Override
+    @Transactional
+    public void sendMessage(ChatMessageRequest request) {
+        User sender = userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
+
+        conversationService.checkConversationAccess(
+                conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
+                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
+                , sender.getId());
+
+        ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
+
+        chatMessage.setSender(ParticipantInfo.builder()
+                .userId(sender.getId())
+                .displayName(sender.getDisplayName())
+                .build());
+
+        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
     }
 
     @Override

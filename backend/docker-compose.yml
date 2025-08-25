@@ -1,0 +1,48 @@
+services:
+  backend:
+    image: chat-app-be
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    environment:
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=chatapp
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - chat-app-network
+
+  mongodb:
+    image: mongo:8.0
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - chat-app-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chat-app-network
+
+networks:
+  chat-app-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+  redis-data:

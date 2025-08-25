@@ -9,7 +9,6 @@ public final class Constants {
 
     // Websocket
     public static final String TOPIC_CONVERSATIONS_PREFIX = "/topic/conversations/";
-    public static final String TOPIC_CONVERSATION_UPDATE_PREFIX = "/topic/conversation-update/";
 
     // Redis Prefix
     public static final String ONLINE_PREFIX = "ONLINE:";

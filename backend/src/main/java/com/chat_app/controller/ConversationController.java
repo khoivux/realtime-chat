@@ -60,11 +60,6 @@ public class ConversationController {
 
     @PatchMapping("/add-user")
     public ApiResponse<?> addParticipant(@RequestBody ParticipantRequest request) {
-        System.out.println("=== ADD USER CONTROLLER ===");
-        System.out.println("ParticipantRequest: " + request);
-        System.out.println("UserId: " + request.getUserId());
-        System.out.println("ConversationId: " + request.getConversationId());
-        
         conversationService.addParticipant(request);
         return ApiResponse.builder()
                 .message("Thêm người dùng thành công")
