@@ -9,6 +9,7 @@ public final class Constants {
     public static final String DEFAULT_ADMIN_PASSWORD = "12345";
     // Websocket
     public static final String TOPIC_CONVERSATIONS_PREFIX = "/topic/conversations/";
+    public static final String TOPIC_CONVERSATION_UPDATE_PREFIX = "/topic/conversation-update/";
 
     // Redis Prefix
     public static final String ONLINE_PREFIX = "ONLINE:";

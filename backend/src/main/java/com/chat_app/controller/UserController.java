@@ -6,6 +6,7 @@ import com.chat_app.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +47,13 @@ public class UserController {
     public ApiResponse<?> updateProfile(@Valid @RequestBody  UpdateUserRequest request) {
         return ApiResponse.builder()
                 .data(userService.updateProfile(request))
+                .build();
+    }
+
+    @PatchMapping("/update-avatar")
+    public ApiResponse<?> updateAvatar(@NotBlank @RequestParam String avatarUrl) {
+        return ApiResponse.builder()
+                .data(userService.updateAvatar(avatarUrl))
                 .build();
     }
 }

@@ -10,15 +10,11 @@ import java.util.List;
 
 public interface UserService {
     UserResponse getByUsername(String username);
-
     UserResponse updateProfile(UpdateUserRequest request);
-
+    UserResponse updateAvatar(String avatarUrl);
     List<UserResponse> getList(String name);
-
     List<String> getOnlineUserIds();
-
     @PreAuthorize("hasRole('ADMIN')")
     void blockOrActive(String userId, Boolean blocked);
-
     UserStatsResponse getUserStats(LocalDate date);
 }

@@ -16,7 +16,7 @@ public enum ErrorCode {
     EMAIL_EXISTED(1007, "Email đã tồn tại", HttpStatus.CONFLICT),
     UNAUTHENTICATED(1008, "Ban can dang nhap tai khoan", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1009, "Bạn không được cấp quyền", HttpStatus.FORBIDDEN),
-    PASSWORD_NOT_MATCHED(1010, "Mật khẩu xác nhận không đúng", HttpStatus.BAD_REQUEST),
+    PASSWORD_NOT_MATCHED(1010, "Mật khẩu không đúng", HttpStatus.BAD_REQUEST),
     CHATMESSAGE_NOT_FOUND(1011, "Tin nhắn không tồn tại", HttpStatus.NOT_FOUND),
     PHONENUMBER_EXISTED(1012, "Số điện thoại đã tồn tại", HttpStatus.CONFLICT),
     CONVERSATION_NOT_FOUND(1014, "Conversation không tồn tại", HttpStatus.NOT_FOUND),
@@ -30,7 +30,8 @@ public enum ErrorCode {
     BLOCKED_USER(1021 ,"Tài khoản này đã bị khóa", HttpStatus.BAD_REQUEST),
     LOGIN_FAILED(1022 ,"Tên tài khoản hoặc mật khẩu không đúng", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_EXISTED(1023 ,"Email chưa được đăng ký", HttpStatus.NOT_FOUND),
-    INVALID_DATE_RANGE(1024, "Lỗi ngày không hợp lệ", HttpStatus.BAD_REQUEST);
+    INVALID_DATE_RANGE(1024, "Lỗi ngày không hợp lệ", HttpStatus.BAD_REQUEST),
+    USER_IS_NOT_VERIFIED(1025, "Tài khoản chưa được xác thực. Vui lòng kiểm tra email để xác thực.", HttpStatus.BAD_REQUEST);
     ;
     private final int code;
     private final String message;

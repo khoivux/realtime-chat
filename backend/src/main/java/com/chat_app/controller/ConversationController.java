@@ -58,6 +58,14 @@ public class ConversationController {
                 .build();
     }
 
+    @PutMapping("/update-avatar")
+    public ApiResponse<?> updateAvatar(@RequestBody UpdateConversationRequest request) {
+        return ApiResponse.builder()
+                .data(conversationService.updateAvatar(request))
+                .message("Cập nhật phiên chat thành công")
+                .build();
+    }
+
     @PatchMapping("/add-user")
     public ApiResponse<?> addParticipant(@RequestBody ParticipantRequest request) {
         conversationService.addParticipant(request);

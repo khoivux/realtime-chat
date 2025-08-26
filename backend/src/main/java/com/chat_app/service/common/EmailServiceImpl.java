@@ -1,5 +1,7 @@
 package com.chat_app.service.common;
 
+import com.chat_app.model.User;
+import com.chat_app.service.auth.JwtService;
 import com.sendgrid.Method;
 import com.sendgrid.Request;
 import com.sendgrid.Response;
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class EmailServiceImpl implements EmailService{
     private String verificationLink;
 
     private final SendGrid sendGrid;
+    private final JwtService jwtService;
 
     /**
      * Send email by SendGrid
@@ -79,18 +81,13 @@ public class EmailServiceImpl implements EmailService{
         }
     }
 
-    /**
-     *  Send Verification Email for Register
-     * @param userFullname receiver's fullname
-     * @param userEmail receiver's email
-     */
     @Override
-    public void sendVerifyEmail(String userFullname, String userEmail) {
-        String path = verificationLink + "?secretCode=" + UUID.randomUUID();
-        sendTemplateEmail(userEmail,
+    public void sendVerifyEmail(User user, String token) {
+        String path = verificationLink + "?token=" + token;
+        sendTemplateEmail(user.getEmail(),
                 "Xac thuc Email",
                 verifyTemplateId,
-                Map.of("username", userFullname, "verification_link", path));
+                Map.of("username", user.getUsername(), "verification_link", path));
     }
 
     private Request buildSendGridRequest(Mail mail) throws IOException {

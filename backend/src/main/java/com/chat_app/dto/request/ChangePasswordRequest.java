@@ -1,7 +1,6 @@
 package com.chat_app.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateUserRequest {
-    String username;
-    String displayName;
+public class ChangePasswordRequest {
+    String oldPassword;
+    String newPassword;
 }

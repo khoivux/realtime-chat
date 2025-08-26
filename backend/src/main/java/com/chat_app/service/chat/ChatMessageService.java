@@ -9,12 +9,8 @@ import java.time.LocalDate;
 
 public interface ChatMessageService {
     OffsetResponse<ChatMessageResponse> getMessagesByConversation(String conversationId, int offset, int limit);
-
     void sendMessage(ChatMessageRequest request);
-
     ChatMessageResponse update(ChatMessageRequest request);
-
     void delete(String chatId);
-
     ChatStatsResponse getStats(LocalDate date);
 }

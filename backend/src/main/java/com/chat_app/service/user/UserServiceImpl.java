@@ -19,7 +19,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -45,7 +46,17 @@ public class UserServiceImpl implements UserService{
         }
         user.setUsername(request.getUsername());
         user.setDisplayName(request.getDisplayName());
-        user.setAvatarUrl(request.getAvatarUrl());
+        //
+        userRepository.save(user);
+        return userMapper.toResponse(user);
+    }
+
+    @Override
+    public UserResponse updateAvatar(String avatarUrl) {
+        User user = UserUtils.getCurrUser();
+
+        user.setAvatarUrl(avatarUrl);
+        //
         userRepository.save(user);
         return userMapper.toResponse(user);
     }

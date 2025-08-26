@@ -1,6 +1,7 @@
 package com.chat_app.service.chat;
 
 import com.chat_app.constant.ChatType;
+import com.chat_app.constant.Constants;
 import com.chat_app.constant.ErrorCode;
 import com.chat_app.dto.request.ConversationRequest;
 import com.chat_app.dto.request.ParticipantRequest;
@@ -15,8 +16,10 @@ import com.chat_app.repository.ChatMessageRepository;
 import com.chat_app.repository.ConversationRepository;
 import com.chat_app.repository.UserRepository;
 import com.chat_app.utils.MessageUtils;
+import com.chat_app.utils.ParticipantUtils;
 import com.chat_app.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +27,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.StringJoiner;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,7 @@ public class ConversationServiceImpl implements ConversationService{
     private final ConversationRepository conversationRepository;
     private final ParticipantInfoMapper participantInfoMapper;
     private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Returns all active conversations that the current user is participating in.
@@ -78,7 +81,7 @@ public class ConversationServiceImpl implements ConversationService{
 
         List<String> sortedIds = userIds.stream().distinct().sorted().toList();
 
-        String userIdHash = generateParticipantHash(sortedIds);
+        String userIdHash = ParticipantUtils.generateParticipantHash(sortedIds);
         Conversation conversation = conversationRepository.findByParticipantHash(userIdHash)
                 .orElseGet(() -> {
                     // Create participant list
@@ -100,7 +103,13 @@ public class ConversationServiceImpl implements ConversationService{
                     return conversationRepository.save(newConversation);
                 });
 
-        return toResponse(conversation);
+        ConversationResponse response = toResponse(conversation);
+
+        conversation.getParticipants().stream()
+                .map(ParticipantInfo::getUserId)
+                .forEach(userId -> messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX + userId, response));
+
+        return response;
     }
 
     /**
@@ -118,17 +127,37 @@ public class ConversationServiceImpl implements ConversationService{
         if(conversation.getType() == ChatType.DIRECT) {
             throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
         }
-        conversation.setName(request.getName());
-        // any fields
-        //
+        if(request.getName() != null) {
+            conversation.setName(request.getName());
+        }
+
+        Conversation savedConversation = conversationRepository.save(conversation);
+        ConversationResponse response = toResponse(savedConversation);
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATION_UPDATE_PREFIX + conversation.getId(), response);
         return toResponse(conversationRepository.save(conversation));
     }
 
-    /**
-     * Adds a user to or removes a user from a conversation.
-     *
-     * @param request participant action request
-     */
+    @Override
+    public ConversationResponse updateAvatar(UpdateConversationRequest request) {
+        Conversation conversation = conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
+                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        checkConversationAccess(conversation, UserUtils.getCurrUserId());
+        if(conversation.getType() == ChatType.DIRECT) {
+            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
+        }
+
+        if(request.getAvatarUrl() != null) {
+            conversation.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        Conversation savedConversation = conversationRepository.save(conversation);
+        ConversationResponse response = toResponse(savedConversation);
+
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATION_UPDATE_PREFIX + conversation.getId(), response);
+        return response;
+    }
+
     @Override
     @Transactional
     public void addParticipant(ParticipantRequest request) {
@@ -148,14 +177,9 @@ public class ConversationServiceImpl implements ConversationService{
 
         participant.setJoinedAt(Instant.now());
         participant.setLeftAt(null);
-
         conversationRepository.save(conversation);
     }
 
-    /**
-     *
-     * @param request
-     */
     @Override
     @Transactional
     public void removeParticipant(ParticipantRequest request) {
@@ -191,7 +215,6 @@ public class ConversationServiceImpl implements ConversationService{
                 .orElse(null);
         String lastSeenMessageId = lastMessage != null ? lastMessage.getId() : null;
         participant.setLastSeenMessage(lastSeenMessageId);
-
         conversationRepository.save(conversation);
     }
 
@@ -217,18 +240,6 @@ public class ConversationServiceImpl implements ConversationService{
         return chatMessageRepository.countByConversationIdAndCreatedAtAfterAndIsDeletedFalse(conversation.getId(), lastReadAt);
     }
 
-    /**
-     * Generates a hash string from sorted participant IDs.
-     *
-     * @param participantIds list of participant IDs
-     * @return participant hash string
-     */
-    private String generateParticipantHash(List<String> participantIds) {
-        StringJoiner stringJoiner = new StringJoiner("_");
-        participantIds.forEach(stringJoiner::add);
-        return stringJoiner.toString();
-    }
-
     private List<ParticipantInfo> createParticipants(List<String> ids) {
         Instant now = Instant.now();
         return userRepository.findAllById(ids).stream()
@@ -240,13 +251,6 @@ public class ConversationServiceImpl implements ConversationService{
                 .toList();
     }
 
-    /**
-     * Converts ChatMessage to ChatMessageResponse.
-     * Includes parent message info and sender details.
-     *
-     * @param conversation the message to convert
-     * @return ChatMessageResponse
-     */
     private ConversationResponse toResponse(Conversation conversation) {
         List<ParticipantInfo> participantInfoResponse = conversation.getParticipants().stream()
                 .filter(participantInfo -> participantInfo.getLeftAt() == null)
@@ -280,6 +284,8 @@ public class ConversationServiceImpl implements ConversationService{
                         response.setConvAvatar(userRepository.getAvatarUrlAndDisplayNameById(p.getUserId()).get().getAvatarUrl());
                         response.setName(p.getDisplayName());
                     });
+        } else if (conversation.getType() == ChatType.GROUP) {
+            response.setConvAvatar(conversation.getAvatarUrl());
         }
         return response;
     }

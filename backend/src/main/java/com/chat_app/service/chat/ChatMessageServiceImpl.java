@@ -76,6 +76,28 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     }
 
     @Override
+    @Transactional
+    public void sendMessage(ChatMessageRequest request) {
+        User sender = userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
+
+        conversationService.checkConversationAccess(
+                conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
+                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
+                , sender.getId());
+
+        ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
+
+        chatMessage.setSender(ParticipantInfo.builder()
+                .userId(sender.getId())
+                .displayName(sender.getDisplayName())
+                .build());
+
+        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
+        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
+    }
+
+    @Override
     public ChatMessageResponse update(ChatMessageRequest request) {
         ChatMessage chatMessage = chatMessageRepository.findByIdAndIsDeletedFalse(request.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.CHATMESSAGE_NOT_FOUND));
@@ -107,28 +129,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
     }
 
     @Override
-    @Transactional
-    public void sendMessage(ChatMessageRequest request) {
-        User sender = userRepository.findById(request.getSenderId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
-
-        conversationService.checkConversationAccess(
-                conversationRepository.findByIdAndIsDeletedFalse(request.getConversationId())
-                        .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND))
-                , sender.getId());
-
-        ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
-
-        chatMessage.setSender(ParticipantInfo.builder()
-                .userId(sender.getId())
-                .displayName(sender.getDisplayName())
-                .build());
-
-        ChatMessageResponse response = toChatMessageResponse(chatMessageRepository.save(chatMessage));
-        messagingTemplate.convertAndSend(Constants.TOPIC_CONVERSATIONS_PREFIX  + request.getConversationId(), response);
-    }
-
-    @Override
     @PreAuthorize("hasRole('ADMIN')")
     public ChatStatsResponse getStats(LocalDate date) {
         ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -136,8 +136,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
         Instant startOfDay = date.atStartOfDay(vietnamZone).toInstant();
         Instant endOfDay = date.plusDays(1).atStartOfDay(vietnamZone).toInstant();
 
-        System.out.println("Start of day: " + startOfDay); // 2025-08-19T00:00:00Z tương ứng với zone
-        System.out.println("End of day: " + endOfDay);     // 2025-08-20T00:00:00Z
         long dailyMessages = chatMessageRepository.countByCreatedAtBetween(startOfDay, endOfDay);
 
         Aggregation agg = Aggregation.newAggregation(
@@ -151,9 +149,6 @@ public class ChatMessageServiceImpl implements ChatMessageService{
                 Aggregation.project("count").and("_id").as("hour"),
                 Aggregation.sort(Sort.by("hour").ascending())
         );
-
-
-
 
         List<HourlyMessageStats> hourlyStats = mongoTemplate.aggregate(
                 agg, "chat_message", HourlyMessageStats.class

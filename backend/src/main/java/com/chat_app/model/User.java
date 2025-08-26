@@ -32,6 +32,8 @@ public class User {
     @Builder.Default
     private Boolean isBlocked = false;
     @Builder.Default
+    private Boolean isVerified = false;
+    @Builder.Default
     private Boolean isSocialLogin = false;
     @CreatedDate
     private Instant createdAt;

@@ -1,6 +1,7 @@
 package com.chat_app.controller;
 
 
+import com.chat_app.dto.request.ChangePasswordRequest;
 import com.chat_app.dto.request.LoginRequest;
 import com.chat_app.dto.request.LogoutRequest;
 import com.chat_app.dto.request.RegisterRequest;
@@ -11,6 +12,7 @@ import com.chat_app.service.auth.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -50,11 +52,15 @@ public class AuthController {
                 .build();
     }
 
-    @Operation(summary = "Confirm Email")
-    @PostMapping("/confirm-email")
-    public ApiResponse<?> confirmEmail(@RequestParam String code) {
-        return ApiResponse.builder()
-                .message("Xác nhận thành công")
-                .build();
+    @Operation(summary = "Change Password")
+    @PostMapping("/change-password")
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+    }
+
+    @Operation(summary = "Verify Email")
+    @PostMapping("/verify-email")
+    public void verifyEmail(@NotBlank @RequestParam String token) {
+        authService.verifyEmail(token);
     }
 }
