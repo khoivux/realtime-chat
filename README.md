@@ -49,8 +49,3 @@ A full-featured real-time chat application supporting 1-on-1 and group conversat
 - Docker
 - Firebase Cloud Messaging (FCM)
 - Cloudinary
-
----
-
-## 🏗 System Architecture (High-level)
-
